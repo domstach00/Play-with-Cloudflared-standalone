@@ -1,4 +1,5 @@
 # Cloudflared Game Client
+[![pl](https://img.shields.io/badge/lang-pl-blue.svg)](./README.pl.md)
 
 This application solves a common problem for gamers: connecting to a game server that is hosted behind a Cloudflare Tunnel. Many games only allow connecting via an IP address and port, and cannot connect to a URL (like `my-server.trycloudflare.com`). 
 

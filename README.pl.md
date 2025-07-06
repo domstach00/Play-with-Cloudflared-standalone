@@ -1,4 +1,5 @@
 # Klient Cloudflared dla Gier
+[![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md)
 
 Ta aplikacja rozwiązuje częsty problem graczy: jak połączyć się z serwerem gry, który jest udostępniony przez Tunel Cloudflare. Wiele gier pozwala na łączenie się tylko przez adres IP i port, a nie potrafi użyć adresu URL (np. `moj-serwer.trycloudflare.com`).
 
