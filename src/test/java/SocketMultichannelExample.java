@@ -1,3 +1,5 @@
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeith.cloudflared.core.api.channels.ChannelDescriptor;
 import org.zeith.cloudflared.core.api.channels.ThreadAllocator;
 import org.zeith.cloudflared.core.api.channels.base.RegistryToken;
@@ -169,9 +171,11 @@ public class SocketMultichannelExample
 								swc.flush();
 							}
 						}
-					} catch(InterruptedException | IOException e)
-					{
+					} catch(InterruptedException e) {
 						throw new RuntimeException(e);
+					} catch(IOException e) {
+						// This is expected if the other side closes the connection.
+						System.out.println("Connection closed by the other party.");
 					}
 				});
 				swc.join();
