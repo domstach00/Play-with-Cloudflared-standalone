@@ -1,9 +1,31 @@
 # Klient Cloudflared dla Gier
 [![en](https://img.shields.io/badge/lang-en-red.svg)](./README.md)
 
-Ta aplikacja rozwiązuje częsty problem graczy: jak połączyć się z serwerem gry, który jest udostępniony przez Tunel Cloudflare. Wiele gier pozwala na łączenie się tylko przez adres IP i port, a nie potrafi użyć adresu URL (np. `moj-serwer.trycloudflare.com`).
+## Problem: Dlaczego nie mogę połączyć się bezpośrednio?
 
-To narzędzie działa z **dowolną grą opartą na protokole TCP** (np. 7 Days to Die, Minecraft, Terraria, Valheim itp.), tworząc lokalnego pośrednika (proxy) na Twoim komputerze. Łączysz swoją grę z lokalnym adresem (np. `127.0.0.1:26900`), a aplikacja bezpiecznie przekierowuje cały ruch do zdalnego serwera gry przez sieć Cloudflare.
+Tunele Cloudflare są doskonałym narzędziem do zabezpieczania serwerów, ale stanowią wyzwanie dla gier takich jak Minecraft, Terraria czy Valheim. Problem jest przy **niezgodności typów ruchu**.
+<br /> Standardowe tunele Cloudflare zostały zaprojektowane głównie z myślą o ruchu HTTP/HTTPS. Gry sieciowe natomiast wysyłają dane jako surowy ruch TCP (czasami UDP), który nie jest rozpoznawany przez klasyczny routing HTTP w tunelu.
+<br /> Chociaż Cloudflare pozwala na skonfigurowanie tunelu TCP (np. za pomocą cloudflared access tcp lub service: tcp://localhost:PORT), to nadal:    
+- tunel po stronie serwera nie rozwiązuje problemu po stronie gracza
+- sam klient gry nie jest w stanie użyć tunelu Cloudflare bez dodatkowego proxy
+
+## Rozwiązanie
+
+Ta aplikacja eliminuje powyższe ograniczenia, tworząc lokalnego pośrednika (proxy TCP) na komputerze gracza.
+<br /> Działa to tak:
+- Aplikacja nasłuchuje na wskazanym porcie lokalnym (np. 127.0.0.1:25565),
+- Gdy gra próbuje się połączyć z tym portem, aplikacja nawiązuje zaszyfrowane połączenie przez tunel Cloudflare do zdalnego serwera (np. moj-serwer.trycloudflare.com),
+- Gra otrzymuje stabilne połączenie, jakby łączyła się z lokalnym serwerem.
+
+Dzięki temu:
+- nie trzeba otwierać portów ani posiadać publicznego IP,
+- nie trzeba konfigurować klienta cloudflared,
+- rozwiązanie działa z dowolną grą korzystającą z TCP,
+- gracz nie musi znać się na sieciach – wystarczy uruchomić aplikację.
+
+## Wymagania
+- Java 11 lub nowsza
+- Jakaś gra online
 
 ## Jak używać
 
