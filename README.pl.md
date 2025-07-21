@@ -25,7 +25,7 @@ Dzięki temu:
 
 ## Wymagania
 - Java 11 lub nowsza
-- Jakaś gra online
+- Jakaś gra online oparta na protokole TCP
 
 ## Jak używać
 

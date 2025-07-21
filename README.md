@@ -25,7 +25,7 @@ Thanks to this:
 
 ## Requirements
 - Java 11 or newer
-- Any online game
+- Any online game based on TCP protocol
 
 ## How to use
 
