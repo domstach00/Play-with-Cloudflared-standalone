@@ -3,21 +3,50 @@ package org.zeith.cloudflared.core.config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
 public class StandaloneConfigManager {
     private static final Logger LOGGER = LogManager.getLogger("ConfigManager");
-    private static final File CONFIG_FILE = new File("standalone-client.properties");
 
     public static final String DEFAULT_HOST = "your.server.com_default";
     public static final String DEFAULT_PORT = "25565"; // Default for Minecraft server
 
+    private static Path getAppDir() {
+        try {
+            URI uri = StandaloneConfigManager.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI();
+
+            Path path = Paths.get(uri);
+            return Files.isDirectory(path) ? path : path.getParent();
+        } catch (URISyntaxException e) {
+            LOGGER.warn("Cannot resolve app directory from CodeSource. Falling back to user.dir", e);
+            return Paths.get(System.getProperty("user.dir"));
+        }
+    }
+
+    private static Path getConfigPath() {
+        return getAppDir().resolve("standalone-client.properties");
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean configurationExists() {
-        return CONFIG_FILE.exists();
+        return Files.exists(getConfigPath());
+    }
+
+    public static void ensureConfigExists() {
+        if (!configurationExists()) {
+            LOGGER.info("Config not found. Creating default at {}", getConfigPath().toAbsolutePath());
+            createDefaultConfig();
+        }
     }
 
     public static void createDefaultConfig() {
@@ -37,41 +66,59 @@ public class StandaloneConfigManager {
         Properties props = new Properties();
         props.setProperty("remote_hostname", hostname);
         props.setProperty("local_port", port);
-        try (FileOutputStream out = new FileOutputStream(CONFIG_FILE)) {
-            props.store(out, "Cloudflared Client Configuration");
+
+        Path cfg = getConfigPath();
+        try {
+            // upewnij się, że katalog istnieje (zwykle istnieje, ale na wszelki wypadek)
+            Files.createDirectories(cfg.getParent());
+
+            try (OutputStream out = Files.newOutputStream(cfg,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                props.store(out, "Cloudflared Client Configuration");
+            }
         } catch (IOException e) {
-            LOGGER.error("Failed to create configuration file:", e);
+            LOGGER.error("Failed to create configuration file at: " + cfg.toAbsolutePath(), e);
         }
     }
 
     public static StandaloneAppConfig loadConfig() {
+        ensureConfigExists();
+
         Properties props = new Properties();
-        try (FileInputStream in = new FileInputStream(CONFIG_FILE)) {
+        Path cfg = getConfigPath();
+
+        try (InputStream in = Files.newInputStream(cfg)) {
             props.load(in);
         } catch (IOException e) {
-            LOGGER.error("Failed to load configuration file:", e);
-            // Return an invalid config object
+            LOGGER.error("Failed to load configuration file at: " + cfg.toAbsolutePath(), e);
             return new StandaloneAppConfig(null, -1);
         }
 
         String remoteHostname = props.getProperty("remote_hostname");
-        int localPort = Integer.parseInt(props.getProperty("local_port", DEFAULT_PORT));
+        String portStr = props.getProperty("local_port", DEFAULT_PORT);
+
+        int localPort;
+        try {
+            localPort = Integer.parseInt(portStr);
+        } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid port value in config: {}. Using default {}", portStr, DEFAULT_PORT);
+            localPort = Integer.parseInt(DEFAULT_PORT);
+        }
 
         return new StandaloneAppConfig(remoteHostname, localPort);
     }
 
     private static boolean isValidPort(String port) {
         if (port == null || port.trim().isEmpty()) return false;
-
         try {
-            int portIntValue = Integer.parseInt(port);
-            return portIntValue >= 1 && portIntValue <= 65535;
+            int p = Integer.parseInt(port.trim());
+            return p >= 1 && p <= 65535;
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
     private static boolean isValidHostname(String hostname) {
-        return hostname == null || hostname.trim().isEmpty();
+        return hostname != null && !hostname.trim().isEmpty();
     }
 }
